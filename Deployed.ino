@@ -11,10 +11,13 @@
 #include <ArduinoJson.h>            // https://github.com/bblanchon/ArduinoJson 
 #include <ESP8266Firebase.h>
 #include <ESP8266WiFi.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 #define _SSID "ARJUN"          // Your WiFi SSID 
 #define _PASSWORD "04464426"      // Your WiFi Password 
 #define REFERENCE_URL "https://hostelroom1k-default-rtdb.firebaseio.com/"  // Your Firebase project reference url 
+#define ONE_WIRE_BUS D5
 
 #define device1 5   // D1
 #define device2 4   // D2
@@ -23,6 +26,8 @@
 int device_list[4] = {device1, device2, device3, device4};
 
 Firebase firebase(REFERENCE_URL);
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
 
 void setup() {
   Serial.begin(115200);
@@ -59,6 +64,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
 
   firebase.json(true);  // Make sure to add this line. 
+  sensors.begin();
 }
 
 void loop() {
@@ -92,5 +98,18 @@ void loop() {
     else{
       digitalWrite(device_list[i], LOW);
     }
+  }
+
+  sensors.requestTemperatures();
+  float tempC = sensors.getTempCByIndex(0);
+    if(tempC != DEVICE_DISCONNECTED_C) 
+  {
+    Serial.print("Temperature for the device 1 (index 0) is: ");
+    Serial.println(tempC);
+    firebase.setFloat("Sensors/Temperature", tempC);
+  } 
+  else
+  {
+    Serial.println("Error: Could not read temperature data");
   }
 }
